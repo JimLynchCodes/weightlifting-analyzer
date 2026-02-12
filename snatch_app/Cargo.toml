@@ -1,0 +1,11 @@
+[package]
+name = "snatch_app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+snatch_analyzer = { path = "../snatch_analyzer" }  # adjust path to your lib
+opencv = "0.98"  # if your lib depends on OpenCV
+
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
