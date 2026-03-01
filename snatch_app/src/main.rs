@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     let frames = load_video_as_pose_frames(&args.file)?;
     println!("Loaded {} PoseFrames", frames.len());
 
-    let analysis = Analyzer::analyze(&frames);
+    let analysis = Analyzer::analyze_frames(&frames);
     println!("Lift Analysis: {:#?}", analysis);
 
     Ok(())
