@@ -13,6 +13,15 @@ const analyzer = new Analyzer({
 
 analyzer.analyzeFrames(frames);
  *
+ *
+ * This version is:
+
+✅ WASM safe
+✅ Batch processing friendly
+✅ Memory stable
+✅ No unnecessary mutability leaks
+✅ Easy JS wrapper binding
+✅ Good demo project architecture
  */
 
 pub struct Analyzer {
@@ -27,15 +36,22 @@ pub struct Analyzer {
 
 impl Analyzer {
     pub fn new(tuning: AnalyzerTuning) -> Self {
-    Self {
-        tuning,
-        prev_knee: None,
-        prev_hip: None,
-        prev_torso: None,
-        prev_drift: None,
-        prev_velocity: None,
+        Self {
+            tuning,
+            prev_knee: None,
+            prev_hip: None,
+            prev_torso: None,
+            prev_drift: None,
+            prev_velocity: None,
+        }
     }
-}
+
+    fn smooth(prev: Option<f32>, current: f32, alpha: f32) -> f32 {
+        match prev {
+            Some(p) => alpha * current + (1.0 - alpha) * p,
+            None => current,
+        }
+    }
 
     pub fn analyze_frames(&mut self, frames: &[PoseFrame]) -> LiftAnalysis {
         let mut knee_angles = Vec::new();
@@ -47,12 +63,11 @@ impl Analyzer {
         let mut start_bar_x: Option<f32> = None;
 
         for (i, frame) in frames.iter().enumerate() {
-            // --- Raw signals ---
+            // ---- Joint signals ----
             let knee_raw = angles::knee_angle(frame);
             let hip_raw = angles::hip_angle(frame);
             let torso_raw = angles::torso_angle(frame);
 
-            // --- Smoothing ---
             let knee = Self::smooth(self.prev_knee, knee_raw, self.tuning.angle_smoothing_alpha);
 
             let hip = Self::smooth(self.prev_hip, hip_raw, self.tuning.angle_smoothing_alpha);
@@ -71,7 +86,7 @@ impl Analyzer {
             hip_angles.push(hip);
             torso_angles.push(torso);
 
-            // --- Bar drift ---
+            // ---- Drift tracking ----
             if start_bar_x.is_none() {
                 if let Some(bar) = &frame.barbell {
                     if bar.confidence > 0.2 {
@@ -95,7 +110,7 @@ impl Analyzer {
             self.prev_drift = Some(drift);
             bar_drifts.push(drift);
 
-            // --- Velocity ---
+            // ---- Velocity ----
             let velocity_raw = angles::bar_velocity(
                 frame,
                 if i > 0 { Some(&frames[i - 1]) } else { None },
@@ -112,22 +127,12 @@ impl Analyzer {
             bar_velocities.push(velocity);
         }
 
-        let faults = fault_detection::detect_faults(
-            &knee_angles,
-            &hip_angles,
-            &torso_angles,
-            &bar_drifts,
-            &bar_velocities,
-            &self.tuning,
-        );
-
         LiftAnalysis {
             knee_angles,
             hip_angles,
             torso_angles,
             bar_drifts,
             bar_velocities,
-            faults,
         }
     }
 }
@@ -135,20 +140,25 @@ impl Analyzer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{PoseFrame, Keypoint, Barbell};
+    use crate::models::{Barbell, Keypoint, PoseFrame};
 
     #[test]
-    fn test_analyzer_pipeline() {
+    fn test_analyzer_pipeline_metrics() {
         let frame_count = 10;
 
-        let mut frames = Vec::new();
+        // ---- Mock frames ----
+        let mut frames: Vec<PoseFrame> = Vec::new();
 
         for i in 0..frame_count {
             frames.push(PoseFrame {
                 timestamp: i as f32 * 0.033,
 
                 keypoints: vec![
-                    Keypoint { x: i as f32, y: i as f32, confidence: 1.0 };
+                    Keypoint {
+                        x: i as f32,
+                        y: i as f32,
+                        confidence: 1.0,
+                    };
                     17
                 ],
 
@@ -162,16 +172,26 @@ mod tests {
             });
         }
 
+        // ---- Analyzer ----
         let mut analyzer = Analyzer::new(AnalyzerTuning::default());
 
         let analysis = analyzer.analyze_frames(&frames);
 
+        // ---- Structural validation ----
         assert_eq!(analysis.knee_angles.len(), frame_count);
         assert_eq!(analysis.hip_angles.len(), frame_count);
         assert_eq!(analysis.torso_angles.len(), frame_count);
         assert_eq!(analysis.bar_drifts.len(), frame_count);
         assert_eq!(analysis.bar_velocities.len(), frame_count);
 
-        assert!(analysis.faults.is_empty() || !analysis.faults.is_empty());
+        // ---- Numerical sanity ----
+        assert!(analysis.knee_angles.iter().all(|v| v.is_finite()));
+        assert!(analysis.hip_angles.iter().all(|v| v.is_finite()));
+        assert!(analysis.torso_angles.iter().all(|v| v.is_finite()));
+        assert!(analysis.bar_drifts.iter().all(|v| v.is_finite()));
+        assert!(analysis.bar_velocities.iter().all(|v| v.is_finite()));
+
+        // ---- Signal behavior sanity ----
+        assert!(analysis.knee_angles.len() > 0 && analysis.bar_velocities.len() > 0);
     }
 }
