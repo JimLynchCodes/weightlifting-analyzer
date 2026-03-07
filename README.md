@@ -1,7 +1,5 @@
 # Weightlifting Analyzer(s)
 
-Yerrrrp
-
 
 ## What's Here?
 
