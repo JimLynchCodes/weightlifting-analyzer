@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-snatch_analyzer = { path = "../snatch_analyzer" }  # adjust path to your lib
+snatch_core = { path = "../snatch_core" }  # adjust path to your lib
 opencv = "0.98"  # if your lib depends on OpenCV
 
 anyhow = "1.0"

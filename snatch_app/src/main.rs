@@ -5,7 +5,7 @@ use snatch_analyzer::core::{Analyzer, video_loader::load_video_as_pose_frames};
 
 #[derive(Parser)]
 struct Args {
-    #[arg(short, long)]
+    #[arg(short, long, default_value = "../example_video_files/YTDown.com_YouTube_Full-Snatch-side-view_Media_pIWow9YEjfE_001_1080p.mp4")]
     file: String,
 }
 
