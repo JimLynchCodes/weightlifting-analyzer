@@ -5,7 +5,12 @@ edition = "2024"
 
 [dependencies]
 snatch_core = { path = "../snatch_core" }  # adjust path to your lib
-opencv = "0.98"  # if your lib depends on OpenCV
+opencv = { version = "0.88.9", default-features = false, features = [
+    "imgproc",
+    "imgcodecs",
+    "videoio",
+    "video"
+] }
 
 anyhow = "1.0"
 clap = { version = "4.5", features = ["derive"] }

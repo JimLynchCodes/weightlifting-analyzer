@@ -53,6 +53,7 @@ impl Analyzer {
         }
     }
 
+    // add boolean param for "whether to generate new video or not"
     pub fn analyze_frames(&mut self, frames: &[PoseFrame]) -> LiftAnalysis {
         let mut knee_angles = Vec::new();
         let mut hip_angles = Vec::new();
@@ -133,9 +134,52 @@ impl Analyzer {
             torso_angles,
             bar_drifts,
             bar_velocities,
+
+            // TODO - add "new video file path"
         }
     }
+
+    // pub fn analyze_frames(&mut self, frames: &[PoseFrame]) -> LiftAnalysis {
+    //     let mut start_bar_x: Option<f32> = None;
+
+    //     // Using functional style for clarity and speed
+    //     let metrics: Vec<_> = frames
+    //         .iter()
+    //         .enumerate()
+    //         .map(|(i, frame)| {
+    //             // 1. Joint Angles (Using glam for vector logic)
+    //             let knee = Self::smooth(&mut self.state.knee, angles::knee_angle(frame), self.tuning.angle_smoothing_alpha);
+    //             let hip = Self::smooth(&mut self.state.hip, angles::hip_angle(frame), self.tuning.angle_smoothing_alpha);
+    //             let torso = Self::smooth(&mut self.state.torso, angles::torso_angle(frame), self.tuning.angle_smoothing_alpha);
+
+    //             // 2. Barbell Logic
+    //             if start_bar_x.is_none() {
+    //                 start_bar_x = frame.barbell.as_ref().filter(|b| b.confidence > 0.2).map(|b| b.center_x);
+    //             }
+
+    //             let drift_raw = start_bar_x.map_or(0.0, |sx| angles::bar_drift(frame, sx, self.tuning.bar_width));
+    //             let drift = Self::smooth(&mut self.state.drift, drift_raw, self.tuning.drift_smoothing_alpha);
+
+    //             let velocity_raw = angles::bar_velocity(frame, frames.get(i.wrapping_sub(1)), self.tuning.bar_width);
+    //             let velocity = Self::smooth(&mut self.state.velocity, velocity_raw, self.tuning.velocity_smoothing_alpha);
+
+    //             (knee, hip, torso, drift, velocity)
+    //         })
+    //         .collect();
+
+    //     // Unzip the results into the final struct
+    //     LiftAnalysis {
+    //         knee_angles: metrics.iter().map(|m| m.0).collect(),
+    //         hip_angles: metrics.iter().map(|m| m.1).collect(),
+    //         torso_angles: metrics.iter().map(|m| m.2).collect(),
+    //         bar_drifts: metrics.iter().map(|m| m.3).collect(),
+    //         bar_velocities: metrics.iter().map(|m| m.4).collect(),
+    //     }
+    // }
+
 }
+
+
 
 #[cfg(test)]
 mod tests {
